@@ -1,3 +1,5 @@
+import { AwsClient } from 'aws4fetch'
+
 async function getWorkerLocation() {
   const res = await fetch('https://cloudflare.com/cdn-cgi/trace')
   const text = await res.text()
@@ -97,4 +99,47 @@ async function notifyWithApprise(
   }
 }
 
-export { getWorkerLocation, fetchTimeout, withTimeout, notifyWithApprise, formatStatusChangeNotification }
+// https://www.daniel-mitchell.com/blog/send-email-with-aws-ses-in-a-cloudflare-workers/
+async function sendEmail(
+  accessKeyId: string,
+  secretAccessKey: string,
+  recipientEmail: string,
+  title: string,
+  body: string
+) {
+  const aws = new AwsClient({ accessKeyId, secretAccessKey });
+  const resp = await aws.fetch('https://email.us-east-1.amazonaws.com/v2/email/outbound-emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      Destination: {
+        ToAddresses: [recipientEmail],
+      },
+      FromEmailAddress: 'alert@cyberspace.app',
+      Content: {
+        Simple: {
+          Subject: {
+            Data: title
+          },
+          Body: {
+            Text: {
+              Data: body
+            }
+          }
+        },
+      },
+    }),
+  })
+
+  const respText = await resp.json()
+  console.log(resp.status + ' ' + resp.statusText)
+  console.log(respText)
+  if (resp.status != 200 && resp.status != 201) {
+    throw new Error('Error sending email: ' + resp.status + ' ' + resp.statusText + ' ' + respText)
+  }
+  return resp.status
+}
+
+export { getWorkerLocation, fetchTimeout, withTimeout, notifyWithApprise, sendEmail, formatStatusChangeNotification }
