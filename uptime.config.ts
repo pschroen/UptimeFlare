@@ -77,6 +77,8 @@ const workerConfig = {
     // [Optional] recipient URL for apprise, refer to https://github.com/caronc/apprise
     // if not specified, no notification will be sent
     // recipientUrl: "tgram://bottoken/ChatID",
+    // [Optional] recipient email for AWS SES, refer to https://www.daniel-mitchell.com/blog/send-email-with-aws-ses-in-a-cloudflare-workers/
+    recipientEmail: 'patrick@alienkitty.com',
     // [Optional] timezone used in notification messages, default to "Etc/GMT"
     // timeZone: "Asia/Shanghai",
     // [Optional] grace period in minutes before sending a notification

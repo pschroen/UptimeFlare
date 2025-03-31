@@ -1,10 +1,12 @@
 import { workerConfig } from '../../uptime.config'
-import { formatStatusChangeNotification, getWorkerLocation, notifyWithApprise } from './util'
+import { formatStatusChangeNotification, getWorkerLocation, notifyWithApprise, sendEmail } from './util'
 import { MonitorState } from '../../uptime.types'
 import { getStatus } from './monitor'
 
 export interface Env {
   UPTIMEFLARE_STATE: KVNamespace
+  AWS_ACCESS_KEY_ID: string
+  AWS_SECRET_ACCESS_KEY: string
 }
 
 export default {
@@ -67,6 +69,26 @@ export default {
         )
       } else {
         console.log(`Apprise API server or recipient URL not set, skipping apprise notification for ${monitor.name}`)
+      }
+
+      if (workerConfig.notification?.recipientEmail) {
+        const notification = formatStatusChangeNotification(
+          monitor,
+          isUp,
+          timeIncidentStart,
+          timeNow,
+          reason,
+          workerConfig.notification?.timeZone ?? 'Etc/GMT'
+        )
+        await sendEmail(
+          env.AWS_ACCESS_KEY_ID,
+          env.AWS_SECRET_ACCESS_KEY,
+          workerConfig.notification.recipientEmail,
+          notification.title,
+          notification.body
+        )
+      } else {
+        console.log(`Recipient email not set, skipping email notification for ${monitor.name}`)
       }
     }
 
